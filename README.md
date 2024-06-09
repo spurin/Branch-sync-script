@@ -1,8 +1,8 @@
-# Project Title
+# Kubernetes Release Docs Team - Branch Sync Script
 
 Bash script to use to perform weekly branch syncs for kubernetes release team
 
-# Description
+## Description
 
 Each week the release docs team needs to merge the `main` branch into `dev-[future release]` branch in order to avoid merge conflicts on release day. This script provides a user friendly execution of the branch sync commands from the [release docs handbook](https://github.com/kubernetes/sig-release/blob/b51237ddb556bb6d24e43d7424e55cb9e66694d5/release-team/role-handbooks/docs/Release-Timeline.md#maintain-the-current-and-upcoming-dev-branch)).
 
