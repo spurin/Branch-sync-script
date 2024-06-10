@@ -9,7 +9,7 @@ FUTURE_RELEASE=""
 help() {
   echo "Usage: $0 FUTURE_RELEASE [-p | --push] [-u | --user]"
   echo "Options:"
-  echo "  -p, --push    Push the branch sync automatically"
+  echo "  -p, --push    Push the branch sync automatically without prompting"
   echo "  -u, --user    Manually set github user"
   echo "  -h, --help    Display this help message"
 }
