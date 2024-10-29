@@ -39,14 +39,28 @@ print_command() {
   print_color "$COLOR_BLUE" "Executing: $1"
 }
 
-# Execute command and handle errors
+# Execute command with optional error ignore flag
 execute() {
+  local ignore_errors=false
+  if [[ "$1" == "--ignore-errors" ]]; then
+    ignore_errors=true
+    shift
+  fi
+
   print_command "$1"
   eval "$1"
-  if [ $? -ne 0 ]; then
-    print_color "$COLOR_RED" "Error: Command failed - $1"
-    exit 1
+  local exit_code=$?
+
+  if [[ $exit_code -ne 0 ]]; then
+    if [[ $ignore_errors == true ]]; then
+      print_color "$COLOR_YELLOW" "Warning: Command failed - $1 (exit code: $exit_code), but continuing execution."
+    else
+      print_color "$COLOR_RED" "Error: Command failed - $1"
+      exit 1
+    fi
   fi
+
+  return $exit_code
 }
 
 # Prompt for confirmation on the same line
@@ -157,12 +171,42 @@ prepare_release_branch() {
 
 sync_release_branch_with_main() {
   print_heading $COLOR_PURPLE "Synchronizing 'dev-$FUTURE_RELEASE' with upstream and merging with 'main':"
+
+  # Pull the latest changes with fast-forward only to update 'dev-$FUTURE_RELEASE'
   print_color "$COLOR_GREEN" "Pulling the latest changes with fast-forward only to update 'dev-$FUTURE_RELEASE'."
   execute "git pull --ff-only"
+
+  # Attempt to merge 'upstream/main' into 'dev-$FUTURE_RELEASE' to stay current
   print_color "$COLOR_GREEN" "Merging 'upstream/main' into 'dev-$FUTURE_RELEASE' to stay current with upstream changes."
-  if ! execute "git merge upstream/main -m 'Merge main into dev-$FUTURE_RELEASE to keep up-to-date'"; then
-    print_color "$COLOR_RED" "Error: Merge conflict detected. Resolve conflicts before proceeding."
-    exit 1
+  if ! execute --ignore-errors "git merge upstream/main -m 'Merge main into dev-$FUTURE_RELEASE to keep up-to-date'"; then
+    print_color "$COLOR_RED" "Error: Merge conflict detected. Please resolve conflicts to proceed."
+
+    # Display conflict resolution guidance
+    print_color "$COLOR_YELLOW" "To review conflicts, open a new terminal or editor. Use the following commands to review changes:"
+    print_color "$COLOR_BLUE" "  cat <file>                         # Review conflict"
+    print_color "$COLOR_BLUE" "  git blame dev-$FUTURE_RELEASE -- <file>       # Review changes from 'dev-$FUTURE_RELEASE' (ours)"
+    print_color "$COLOR_BLUE" "  git blame upstream/main -- <file>  # Review changes from 'upstream/main' (theirs)"
+    print_color "$COLOR_YELLOW" "To resolve conflicts, Use the following commands to accept changes:"
+    print_color "$COLOR_BLUE" "  git checkout --ours <file>     # Use changes from 'dev-$FUTURE_RELEASE' (ours)"
+    print_color "$COLOR_BLUE" "  git checkout --theirs <file>   # Use changes from 'upstream/main' (theirs)"
+    print_color "$COLOR_YELLOW" "After resolving all conflicts, mark files as resolved using:"
+    print_color "$COLOR_BLUE" "  git add <file>                 # Mark conflicts as resolved"
+    print_color "$COLOR_YELLOW" "Once all conflicts are resolved, record conflict accordingly:"
+    print_color "$COLOR_BLUE" "  git commit -m 'resolved conflict: <reason>'"
+
+    # Prompt for user confirmation after resolving conflicts
+    while true; do
+      echo -en "${COLOR_PURPLE}Have you resolved the conflicts and committed the merge? (y/n): ${COLOR_RESET}"
+      read -r response
+      if [[ "$response" =~ ^[Yy]$ ]]; then
+        break
+      elif [[ "$response" =~ ^[Nn]$ ]]; then
+        print_color "$COLOR_RED" "Merge conflicts must be resolved to proceed. Exiting..."
+        exit 1
+      else
+        print_color "$COLOR_YELLOW" "Invalid response. Please enter 'y' for yes or 'n' for no."
+      fi
+    done
   fi
 }
 
@@ -186,6 +230,10 @@ manage_merged_release_branch() {
     print_color "$COLOR_GREEN" "Setting upstream tracking to 'upstream/main' for 'merged-main-dev-$FUTURE_RELEASE'."
     execute "git branch --set-upstream-to=upstream/main merged-main-dev-$FUTURE_RELEASE"
   fi
+
+  # Merge 'dev-$FUTURE_RELEASE' into 'merged-main-dev-$FUTURE_RELEASE' to incorporate resolved changes
+  print_color "$COLOR_GREEN" "Merging 'dev-$FUTURE_RELEASE' into 'merged-main-dev-$FUTURE_RELEASE' to include all resolved changes."
+  execute "git merge dev-$FUTURE_RELEASE -m 'Merge dev-$FUTURE_RELEASE into merged-main-dev-$FUTURE_RELEASE'"
 }
 
 push_branch() {
