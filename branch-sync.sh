@@ -241,7 +241,7 @@ push_branch() {
   execute "git push origin merged-main-dev-$FUTURE_RELEASE"
   print_color "$COLOR_GREEN" "Successfully pushed 'merged-main-dev-$FUTURE_RELEASE' to your GitHub fork!"
   print_color "$COLOR_YELLOW" "To create a PR, visit: https://github.com/kubernetes/website/compare/dev-${FUTURE_RELEASE}...${YOUR_USER}:${REPO_NAME}:merged-main-dev-${FUTURE_RELEASE}"
-  print_color "$COLOR_YELLOW" "For the PR use the Title: Merge main into dev-${FUTURE_RELEASE}"
+  print_color "$COLOR_YELLOW" "For the PR use the Title: Merged main into dev-${FUTURE_RELEASE}"
   print_color "$COLOR_YELLOW" "See: https://github.com/kubernetes/$REPO_NAME/pull/16225 as an example."
 }
 
